@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Список задач</title>
+    <style>
+        /*стили для всей страницы*/
+        body{
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #8228d2;
+        }
+        /*стили для контейнера*/
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        /*заголовок*/
+        h1{
+            color: #412a49;
+            text-align: center;
+        }
+        /*поле ввода и кнопка*/
+        .input-area{
+            display: flex;
+            margin-bottom: 20px;
+        }
+        #taskInput {
+            flex-grow: 1;
+            padding: 10px;
+            border: 2px solid #8534db;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        #addBtn {
+            padding: 10px 20px;
+            margin-left: 10px;
+            background: #8534db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        /*фильтры*/
+        .filters {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+            gap: 10px;
+        }
+        .filter-btn {
+            padding: 8px 16px;
+            background: #ecf0f1;
+            border: 2px solid #8534db;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .filter-btn.active {
+            background: #8534db;
+            color: white;
+        }
+        /*список задач*/
+        .task-list {
+            list-style: none;
+            padding: 0;
+        }
+        /*отдельная задача*/
+        .task {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            margin: 10px 0;
+            background: #ecf0f1;
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+        /*текст задачи*/
+        .task-text {
+            flex-grow: 1;
+            margin-left: 10px;
+        }
+        /*выполненная задача*/
+        .completed .task-text {
+            text-decoration: line-through;
+            color: #af8dd1;
+        }
+        /*кнопки*/
+        .task button {
+            margin-left: 5px;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .complete-btn {
+            background: #2ecc71;
+            color: white;
+        }
+        .delete-btn {
+            background: #e74c3c;
+            color: white;
+        }
+        /*статистика*/
+        .stats {
+            text-align: center;
+            margin-top: 20px;
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Список задач</h1>
+        
+        <div class="input-area">
+            <input type="text" id="taskInput" placeholder="введите текст задачи:">
+            <button id="addBtn">добавить</button>
+        </div>
+
+        <div class="filters">
+            <button class="filter-btn active" data-filter="all">все</button>
+            <button class="filter-btn" data-filter="active">активные</button>
+            <button class="filter-btn" data-filter="completed">выполненные</button>
+        </div>
+
+        <ul id="taskList" class="task-list">
+        </ul>
+
+        <div class="stats">
+            <span id="taskCount">всего задач: 0</span>
+        </div>
+    </div>
+
+    <script>
+        //получение элементов со страницы
+        const taskInput = document.getElementById('taskInput');
+        const addBtn = document.getElementById('addBtn');
+        const taskList = document.getElementById('taskList');
+        const filterBtns = document.querySelectorAll('.filter-btn');
+        const taskCount = document.getElementById('taskCount');
+
+        //массив для задач
+        let tasks = [];
+        let currentFilter = 'all';
+
+        //чистая функция для создания новой задачи
+        const createTask = (text) => ({
+            id: Date.now(),
+            text: text.trim(),
+            completed: false
+        });
+
+        //чистая функция для добавления задачи
+        const addTask = (tasks, newTask) => [...tasks, newTask];
+
+        //чистая функция для переключения статуса задачи
+        const toggleTask = (tasks, taskId) => 
+            tasks.map(task => 
+                task.id === taskId ? {...task, completed: !task.completed} : task
+            );
+
+        //чистая функция для удаления задачи
+        const deleteTask = (tasks, taskId) => 
+            tasks.filter(task => task.id !== taskId);
+
+        //чистая функция для фильтрации задач
+        const filterTasks = (tasks, filter) => {
+            switch(filter) {
+                case 'active':
+                    return tasks.filter(task => !task.completed);
+                case 'completed':
+                    return tasks.filter(task => task.completed);
+                default:
+                    return tasks;
+            }
+        };
+
+        //чистая функция для подсчета статистики
+        const getTaskStats = (tasks) => ({
+            total: tasks.length,
+            active: tasks.filter(task => !task.completed).length,
+            completed: tasks.filter(task => task.completed).length
+        });
+
+        //функция обновления состояния
+        const updateState = (newTasks) => {
+            tasks = newTasks;
+            showTasks();
+            updateStats();
+        };
+
+        //функция добавления новой задачи
+        function addNewTask(){
+            const taskText = taskInput.value.trim();
+            
+            if(taskText === ''){
+                alert('введите задачу')
+                return
+            }
+            
+            const newTask = createTask(taskText);
+            const updatedTasks = addTask(tasks, newTask);
+            updateState(updatedTasks);
+            taskInput.value = '';
+        }
+
+        //функция демонстрации задач на странице
+        function showTasks() {
+            //очистка списка
+            taskList.innerHTML = '';
+
+            //фильтрация задач по текущему фильтру
+            const filteredTasks = filterTasks(tasks, currentFilter);
+
+            //создание элемента списка под задачу
+            filteredTasks.forEach(task => {
+            
+                const li = document.createElement('li');
+                li.className = `task ${task.completed ? 'completed' : ''}`;
+
+                //создание checkbox-а
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.checked = task.completed;
+                checkbox.onchange = () => {
+                    const updatedTasks = toggleTask(tasks, task.id);
+                    updateState(updatedTasks);
+                };
+
+                //текст задачи
+                const span = document.createElement('span');
+                span.className = 'task-text';
+                span.textContent = task.text;
+
+                //кнопки
+                const completeBtn = document.createElement('button');
+                completeBtn.className = 'complete-btn';
+                completeBtn.textContent = task.completed ? 'активна' : 'выполнена';
+                completeBtn.onclick = () => {
+                    const updatedTasks = toggleTask(tasks, task.id);
+                    updateState(updatedTasks);
+                };
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'delete-btn';
+                deleteBtn.textContent = 'удалить';
+                deleteBtn.onclick = () => {
+                    const updatedTasks = deleteTask(tasks, task.id);
+                    updateState(updatedTasks);
+                };
+
+                //присваивание свойств элементу списка
+                li.appendChild(checkbox);
+                li.appendChild(span);
+                li.appendChild(completeBtn);
+                li.appendChild(deleteBtn);
+
+                //добавление в список на странице
+                taskList.appendChild(li);
+            });
+        }
+
+        //функция обновления статистики
+        function updateStats() {
+            const stats = getTaskStats(tasks);
+            taskCount.textContent = `всего задач: ${stats.total} (активных: ${stats.active}, выполненных: ${stats.completed})`;
+        }
+
+        //функция установки фильтра
+        function setFilter(filter) {
+            currentFilter = filter;
+            
+            //обновление активной кнопки фильтра
+            filterBtns.forEach(btn => {
+                if(btn.dataset.filter === filter) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+            
+            showTasks();
+        }
+
+        //обработчики событий
+        addBtn.addEventListener('click', addNewTask);
+        
+        //обработчики для кнопок фильтра
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                setFilter(e.target.dataset.filter);
+            });
+        });
+
+        //enter
+        taskInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                addNewTask();
+            }
+        });
+
+        //инициализация начальных данных
+        tasks = [
+            { id: 1, text: 'тестовая задача 1', completed: true },
+            { id: 2, text: 'тестовая задача 2', completed: true },
+            { id: 3, text: 'тестовая задача 3', completed: false }
+        ];
+
+        showTasks();
+        updateStats();
+    </script>
+</body>
+</html>
