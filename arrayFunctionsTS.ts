@@ -61,21 +61,13 @@ console.log('отсортировано по году выпуска:', sortedBy
 const sortedByBrand = sortByProperty(cars, 'brand');
 console.log('отсортировано по марке:', sortedByBrand);
 
-console.log('stop');//для просмотра массива объектов в vscode
-
 //4. функция с логированием
 const multiply = (a: number, b: number): number => a * b;
 
-// Создаём логирующую обёртку с дефолтным логгером
 const loggedMultiply = withLogging(multiply);
 
-// Вызываем
 const result = loggedMultiply(3, 4);
-// В консоли выведется:
-// вызов функции с аргументами: [3, 4]
-// результат: 12
 
-// Пример с кастомным логгером
 const customLogger = (args: [number, number], result: number) => {
   console.log(`Умножаем ${args[0]} на ${args[1]}, получается ${result}`);
 };
@@ -83,5 +75,3 @@ const customLogger = (args: [number, number], result: number) => {
 const customLoggedMultiply = withLogging(multiply, customLogger);
 
 customLoggedMultiply(5, 6);
-// В консоли:
-// Умножаем 5 на 6, получается 30
