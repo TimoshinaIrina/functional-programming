@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Калькулятор</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background: #ae79dc;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .calculator {
+      background: rgba(255, 255, 255, 0.894);
+      border-radius: 15px;
+      padding: 25px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      width: 100%;
+      max-width: 350px;
+    }
+
+    .display {
+      background: #2c2c4d;
+      color: white;
+      font-size: 2.8em;
+      padding: 20px;
+      text-align: right;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      min-height: 80px;
+      overflow: hidden;
+      word-break: break-all;
+    }
+
+    .buttons {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    .btn {
+      padding: 20px;
+      font-size: 1.2em;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    .btn:hover {
+      transform: scale(1.05);
+    }
+
+    .btn:active {
+      transform: scale(0.95);
+    }
+
+    .btn-number { background: #c8cfd6; }
+    .btn-number:hover { background: #699fd5; }
+
+    .btn-operator { background: #ff9500c4; color: white; }
+    .btn-operator:hover { background: #e06c00; }
+
+    .btn-special { background: #8dd6d1; color: white; }
+    .btn-special:hover { background: #01b2a6db; }
+
+    .btn-clear { background: #ff6b6b; color: white; }
+    .btn-clear:hover { background: #ff5252; }
+
+    .btn-equals {
+      background: #4cd963d7;
+      color: white;
+      grid-column: span 2;
+    }
+    .btn-equals:hover { background: #3bc854; }
+  </style>
+</head>
+<body>
+  <div class="calculator">
+    <div class="display" id="display">0</div>
+    <div class="buttons" id="buttons-container">
+      <!-- кнопки будут добавлены динамически -->
+    </div>
+  </div>
+
+  <script>
+    //состояние калькулятора
+    let currentInput = '0';
+    let firstOperand = null;
+    let currentOperator = null;
+    let isWaitingForSecondOperand = false;
+
+    //DOM-элементы
+    const displayElement = document.getElementById('display');
+    const buttonsContainer = document.getElementById('buttons-container');
+
+    // обновление дисплея
+    function updateDisplay() {
+      displayElement.textContent = currentInput;
+    }
+
+    //обработка ввода цифр и точки
+    function inputDigit(digit) {
+      if (isWaitingForSecondOperand) {
+        currentInput = digit;
+        isWaitingForSecondOperand = false;
+      } else {
+        currentInput = currentInput === '0' && digit !== '.' ? digit : currentInput + digit;
+      }
+      updateDisplay();
+    }
+
+    //установка оператора
+    function setOperator(operator) {
+      const inputValue = parseFloat(currentInput);
+
+      if (firstOperand === null) {
+        firstOperand = inputValue;
+      } else if (currentOperator) {
+        const result = performCalculation();
+        currentInput = String(result);
+        firstOperand = result;
+      }
+
+      currentOperator = operator;
+      isWaitingForSecondOperand = true;
+    }
+
+    //вычисление результата текущей операции
+    function performCalculation() {
+      const secondOperand = parseFloat(currentInput);
+
+      if (isNaN(secondOperand) || firstOperand === null || currentOperator === null) {
+        return parseFloat(currentInput);
+      }
+
+      switch (currentOperator) {
+        case '+': return firstOperand + secondOperand;
+        case '-': return firstOperand - secondOperand;
+        case '*': return firstOperand * secondOperand;
+        case '/': return secondOperand !== 0 ? firstOperand / secondOperand : NaN;
+        default: return secondOperand;
+      }
+    }
+
+    //выполнение расчёта по нажатию "="
+    function calculateResult() {
+      if (currentOperator === null || firstOperand === null) return;
+
+      const result = performCalculation();
+
+      currentInput = isNaN(result) || !isFinite(result) ? 'Ошибка' : String(result);
+      firstOperand = null;
+      currentOperator = null;
+      isWaitingForSecondOperand = false;
+      updateDisplay();
+    }
+
+    //сброс калькулятора
+    function clearCalculator() {
+      currentInput = '0';
+      firstOperand = null;
+      currentOperator = null;
+      isWaitingForSecondOperand = false;
+      updateDisplay();
+    }
+
+    //вспомогательные функции: квадрат и корень
+    function square() {
+      const value = parseFloat(currentInput);
+      if (isNaN(value)) return;
+      currentInput = String(value * value);
+      updateDisplay();
+    }
+
+    function squareRoot() {
+      const value = parseFloat(currentInput);
+      if (isNaN(value) || value < 0) {
+        currentInput = 'Ошибка';
+      } else {
+        currentInput = String(Math.sqrt(value));
+      }
+      updateDisplay();
+    }
+
+    //кнопки
+    const buttonConfig = [
+      { label: 'C',   action: clearCalculator,   class: 'btn-clear' },
+      { label: '√',   action: squareRoot,        class: 'btn-special' },
+      { label: 'x²',  action: square,            class: 'btn-special' },
+      { label: '/',   action: () => setOperator('/'), class: 'btn-operator' },
+
+      { label: '7',   action: () => inputDigit('7'), class: 'btn-number' },
+      { label: '8',   action: () => inputDigit('8'), class: 'btn-number' },
+      { label: '9',   action: () => inputDigit('9'), class: 'btn-number' },
+      { label: '×',   action: () => setOperator('*'), class: 'btn-operator' },
+
+      { label: '4',   action: () => inputDigit('4'), class: 'btn-number' },
+      { label: '5',   action: () => inputDigit('5'), class: 'btn-number' },
+      { label: '6',   action: () => inputDigit('6'), class: 'btn-number' },
+      { label: '-',   action: () => setOperator('-'), class: 'btn-operator' },
+
+      { label: '1',   action: () => inputDigit('1'), class: 'btn-number' },
+      { label: '2',   action: () => inputDigit('2'), class: 'btn-number' },
+      { label: '3',   action: () => inputDigit('3'), class: 'btn-number' },
+      { label: '+',   action: () => setOperator('+'), class: 'btn-operator' },
+
+      { label: '0',   action: () => inputDigit('0'), class: 'btn-number' },
+      { label: '.',   action: () => inputDigit('.'), class: 'btn-number' },
+      { label: '=',   action: calculateResult,       class: 'btn-equals' },
+    ];
+
+    //генерация кнопок
+    buttonConfig.forEach(btn => {
+      const button = document.createElement('button');
+      button.textContent = btn.label;
+      button.className = `btn ${btn.class}`;
+      button.addEventListener('click', btn.action);
+      buttonsContainer.appendChild(button);
+    });
+
+    // поддержка клавиатуры
+    document.addEventListener('keydown', event => {
+      const { key } = event;
+
+      if (/\d/.test(key)) {
+        inputDigit(key);
+      } else if (key === '.') {
+        inputDigit('.');
+      } else if (['+', '-', '*', '/'].includes(key)) {
+        setOperator(key === '*' ? '*' : key === '/' ? '/' : key);
+      } else if (key === 'Enter' || key === '=') {
+        calculateResult();
+      } else if (key === 'Escape' || key === 'c' || key === 'C') {
+        clearCalculator();
+      } else if (key === 's' || key === 'S') {
+        square();
+      } else if (key === 'r' || key === 'R') {
+        squareRoot();
+      }
+    });
+
+    //инициализация
+    updateDisplay();
+  </script>
+</body>
+</html>
