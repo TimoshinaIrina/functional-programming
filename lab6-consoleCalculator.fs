@@ -77,7 +77,7 @@ let rec runCalculator () =
             ()
         | _ ->
             let result = performOperation choice
-            printfn "Результат: %f" result   // ← ИСПРАВЛЕНО: вместо $"..."
+            printfn "Результат: %f" result  
             runCalculator()
     with
     | :? ArgumentException as ex ->
