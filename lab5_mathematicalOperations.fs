@@ -4,7 +4,9 @@ let subtractFn = fun a b -> a - b
 
 let multiplyFn = fun a b -> a * b
 
-let divideFn = fun a b -> a / b
+let divideFn a b =
+    if b = 0.0 then failwith "деление на ноль!"
+    else a / b
 
 let rec factorial n =
     if n < 0 then invalidArg "n" "n >= 0"
